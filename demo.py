@@ -7,7 +7,7 @@ from gaze_tracking import GazeTracking
 from filterpy.kalman import KalmanFilter
 
 # 校准文件路径
-CALIBRATION_FILE = "calibration.json"
+CALIBRATION_FILE = "calibration-12.json"
 # 获取屏幕分辨率
 screen_width, screen_height = pyautogui.size()
 
@@ -58,7 +58,7 @@ def create_kalman_filter_acc():
     kf.Q *= 0.01
     return kf
 
-def low_pass_filter(new_point, last_filtered, alpha_x=0.2, alpha_y=0.1):
+def low_pass_filter(new_point, last_filtered, alpha_x=0.2, alpha_y=0.3):
     """
     对新坐标进行指数加权低通滤波，分别对 x 和 y 方向使用不同的平滑系数
     alpha_x: x 方向平滑系数
