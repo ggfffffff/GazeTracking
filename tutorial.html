@@ -33,14 +33,15 @@
 
         .home-title {
             font-size: 3.5rem;
-            margin-bottom: 2rem;
+            margin-bottom: 4rem;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .home-desc {
             font-size: 1.5rem;
-            margin-bottom: 3rem;
+            margin-bottom: 6rem;
             max-width: 800px;
+            line-height: 2;
         }
 
         .start-button {
@@ -53,6 +54,7 @@
             cursor: pointer;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            margin-top: 2rem;
         }
 
         .start-button:hover {
@@ -184,6 +186,43 @@
         .complete-text {
             color: #666;
             font-size: 1.1rem;
+        }
+
+        /* 添加区域标记样式 */
+        .region-marker {
+            position: fixed;
+            border: 2px dashed rgba(255, 0, 0, 0.5);
+            background-color: rgba(255, 0, 0, 0.1);
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        .region-marker.text {
+            border-color: rgba(0, 255, 0, 0.5);
+            background-color: rgba(0, 255, 0, 0.1);
+        }
+        
+        .region-marker.button {
+            border-color: rgba(0, 0, 255, 0.5);
+            background-color: rgba(0, 0, 255, 0.1);
+        }
+        
+        .region-label {
+            position: fixed;
+            color: white;
+            font-size: 12px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 1001;
+        }
+        
+        .region-label.text {
+            background-color: rgba(0, 255, 0, 0.8);
+        }
+        
+        .region-label.button {
+            background-color: rgba(0, 0, 255, 0.8);
         }
     </style>
 </head>
@@ -327,6 +366,9 @@
         <p class="complete-text">恭喜你，已经学会眼动控制啦，<br>接下来试试关掉这个教程吧！</p>
     </div>
 
+    <!-- 添加区域标记层 -->
+    <div id="regionMarkers"></div>
+
     <script>
         let bottomClickCount = 0;
         let topClickCount = 0;
@@ -336,6 +378,7 @@
             document.getElementById('homePage').style.display = 'none';
             document.getElementById('contentPage').style.display = 'block';
             initScrollBar();
+            updateRegionMarkers();
         }
 
         function initScrollBar() {
@@ -395,8 +438,14 @@
                         document.getElementById('contentPage').style.display = 'none';
                         // 显示完成页面
                         document.getElementById('completePage').style.display = 'block';
+                        // 清除所有现有标记并更新新页面的标记
+                        document.getElementById('regionMarkers').innerHTML = '';
+                        updateRegionMarkers();
                     }, 1000);
                 }
+
+                // 更新区域标记
+                updateRegionMarkers();
             }
 
             // 点击滚动条
@@ -429,6 +478,179 @@
             scrollContent(0);
             bottomHint.classList.add('active');
         }
+
+        // 添加区域标记功能
+        function createRegionMarker(type, x1, y1, x2, y2) {
+            const marker = document.createElement('div');
+            marker.className = `region-marker ${type}`;
+            marker.style.left = `${x1}px`;
+            marker.style.top = `${y1}px`;
+            marker.style.width = `${x2 - x1}px`;
+            marker.style.height = `${y2 - y1}px`;
+            
+            const label = document.createElement('div');
+            label.className = `region-label ${type}`;
+            // 根据位置和类型设置不同的标签文本
+            if (type === 'button' && y1 < 50) {  // 顶部滑动条按钮
+                label.textContent = '上滑区';
+            } else if (type === 'button' && y1 > window.innerHeight - 50) {  // 底部滑动条按钮
+                label.textContent = '下滑区';
+            } else {
+                label.textContent = type === 'text' ? '文字区' : '按钮区';
+            }
+            label.style.left = `${x1}px`;
+            label.style.top = `${y1 - 20}px`;
+            
+            document.getElementById('regionMarkers').appendChild(marker);
+            document.getElementById('regionMarkers').appendChild(label);
+        }
+        
+        function updateRegionMarkers() {
+            // 清除现有标记
+            document.getElementById('regionMarkers').innerHTML = '';
+            
+            // 首页区域
+            if (document.getElementById('homePage').style.display !== 'none') {
+                // 获取实际元素
+                const title = document.querySelector('.home-title');
+                const desc = document.querySelector('.home-desc');
+                const button = document.querySelector('.start-button');
+                
+                // 获取元素的位置和大小
+                const titleRect = title.getBoundingClientRect();
+                const descRect = desc.getBoundingClientRect();
+                const buttonRect = button.getBoundingClientRect();
+                
+                // 标题区
+                createRegionMarker('text',
+                    titleRect.left,
+                    titleRect.top,
+                    titleRect.right,
+                    titleRect.bottom
+                );
+                
+                // 说明文字区
+                createRegionMarker('text',
+                    descRect.left,
+                    descRect.top,
+                    descRect.right,
+                    descRect.bottom
+                );
+                
+                // 按钮区
+                createRegionMarker('button',
+                    buttonRect.left,
+                    buttonRect.top,
+                    buttonRect.right,
+                    buttonRect.bottom
+                );
+            }
+            
+            // 内容页区域
+            if (document.getElementById('contentPage').style.display !== 'none') {
+                // 获取滑动条元素
+                const scrollBar = document.getElementById('scrollBar');
+                const scrollBarRect = scrollBar.getBoundingClientRect();
+                
+                // 滑动条顶部按钮区
+                createRegionMarker('button',
+                    scrollBarRect.left,
+                    scrollBarRect.top,
+                    scrollBarRect.right,
+                    scrollBarRect.top + 20
+                );
+                
+                // 滑动条底部按钮区
+                createRegionMarker('button',
+                    scrollBarRect.left,
+                    scrollBarRect.bottom - 20,
+                    scrollBarRect.right,
+                    scrollBarRect.bottom
+                );
+                
+                // 导航提示文字区
+                const bottomHint = document.getElementById('bottomHint');
+                const topHint = document.getElementById('topHint');
+                
+                if (bottomHint.classList.contains('active')) {
+                    const hintRect = bottomHint.getBoundingClientRect();
+                    createRegionMarker('text',
+                        hintRect.left,
+                        hintRect.top,
+                        hintRect.right,
+                        hintRect.bottom
+                    );
+                }
+                
+                if (topHint.classList.contains('active')) {
+                    const hintRect = topHint.getBoundingClientRect();
+                    createRegionMarker('text',
+                        hintRect.left,
+                        hintRect.top,
+                        hintRect.right,
+                        hintRect.bottom
+                    );
+                }
+
+                // 获取所有section并标记
+                const sections = document.querySelectorAll('.section');
+                sections.forEach(section => {
+                    // 获取标题和文本区域
+                    const title = section.querySelector('.section-title');
+                    const text = section.querySelector('.section-text');
+                    
+                    if (title) {
+                        const titleRect = title.getBoundingClientRect();
+                        createRegionMarker('text',
+                            titleRect.left,
+                            titleRect.top,
+                            titleRect.right,
+                            titleRect.bottom
+                        );
+                    }
+                    
+                    if (text) {
+                        const textRect = text.getBoundingClientRect();
+                        createRegionMarker('text',
+                            textRect.left,
+                            textRect.top,
+                            textRect.right,
+                            textRect.bottom
+                        );
+                    }
+                });
+            }
+            
+            // 完成页区域
+            if (document.getElementById('completePage').style.display === 'block') {
+                const completeTitle = document.querySelector('.complete-title');
+                const completeText = document.querySelector('.complete-text');
+                
+                if (completeTitle) {
+                    const titleRect = completeTitle.getBoundingClientRect();
+                    createRegionMarker('text',
+                        titleRect.left,
+                        titleRect.top,
+                        titleRect.right,
+                        titleRect.bottom
+                    );
+                }
+                
+                if (completeText) {
+                    const textRect = completeText.getBoundingClientRect();
+                    createRegionMarker('text',
+                        textRect.left,
+                        textRect.top,
+                        textRect.right,
+                        textRect.bottom
+                    );
+                }
+            }
+        }
+        
+        // 在页面加载和窗口大小改变时更新区域标记
+        window.addEventListener('load', updateRegionMarkers);
+        window.addEventListener('resize', updateRegionMarkers);
     </script>
 </body>
 </html> 
