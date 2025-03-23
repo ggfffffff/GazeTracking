@@ -10,7 +10,7 @@ from filterpy.kalman import KalmanFilter
 # ==============================
 # 可调参数
 DURATION_THRESHOLD = 1.0       # 停留阈值(秒)——在同一区域停留时间达到此值才触发点击
-DISTANCE_THRESHOLD = 50        # 稳定范围(像素)——视线在此范围内认为是“停留”
+DISTANCE_THRESHOLD = 100        # 稳定范围(像素)——视线在此范围内认为是“停留”
 COOLDOWN_AFTER_CLICK = 1.0     # 点击后冷却时长(秒)，防止连点
 
 # ==============================

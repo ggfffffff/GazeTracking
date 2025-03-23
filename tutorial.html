@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>眼动控制教程</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 首页样式 */
+        .home-page {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .home-title {
+            font-size: 3.5rem;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .home-desc {
+            font-size: 1.5rem;
+            margin-bottom: 3rem;
+            max-width: 800px;
+        }
+
+        .start-button {
+            padding: 1.5rem 3rem;
+            font-size: 1.5rem;
+            background: white;
+            color: #2196F3;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 内容页面样式 */
+        .content-page {
+            display: none;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .scroll-bar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 20px;
+            height: 100vh;
+            background: #e0e0e0;
+            z-index: 100;
+        }
+
+        .scroll-thumb {
+            width: 100%;
+            background: #2196F3;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: top 0.1s ease;
+        }
+
+        .content {
+            margin-left: 20px;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 4rem;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            color: #2196F3;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-content {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .section-text {
+            flex: 1;
+        }
+
+        .section-image {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .section-image img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 导航提示样式 */
+        .nav-hint {
+            position: fixed;
+            left: 30px;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .nav-hint.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .nav-hint.bottom {
+            bottom: 2rem;
+        }
+
+        .nav-hint.top {
+            top: 2rem;
+        }
+
+        .nav-hint p {
+            color: #4CAF50;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        /* 完成页面样式 */
+        .complete-page {
+            display: none;
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .complete-title {
+            color: #4CAF50;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .complete-text {
+            color: #666;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 首页 -->
+    <div class="home-page" id="homePage">
+        <h1 class="home-title">欢迎使用眼动控制系统</h1>
+        <p class="home-desc">
+            在本系统中，当您将视线停留在按钮上时，<br>
+            屏幕会出现一个圆圈渐渐填充，填满后即表示一次点击。<br>
+            您可以随时移动视线来取消或进行其他点击。
+        </p>
+        <button class="start-button" onclick="startTutorial()">开始试用</button>
+    </div>
+
+    <!-- 内容页面 -->
+    <div class="content-page" id="contentPage">
+        <div class="scroll-bar" id="scrollBar">
+            <div class="scroll-thumb" id="scrollThumb"></div>
+        </div>
+        <div class="content">
+            <div class="section">
+                <h2 class="section-title">眼动控制基础</h2>
+                <div class="section-content">
+                    <div class="section-text">
+                        <p>眼动控制技术是一种革命性的交互方式，它让您能够通过眼睛的移动来控制计算机。这项技术不仅提高了操作效率，还为行动不便的用户提供了新的可能性。</p>
+                        <p>通过精确的眼动追踪，系统可以准确识别您的注视点，并据此执行相应的操作。整个过程自然流畅，就像使用鼠标一样直观。</p>
+                    </div>
+                    <div class="section-image">
+                        <img src="https://via.placeholder.com/400x300" alt="眼动控制示意图">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">使用技巧</h2>
+                <div class="section-content">
+                    <div class="section-text">
+                        <p>要获得最佳的使用体验，请保持头部相对稳定，让眼睛自然移动。系统会自动适应您的使用习惯，提供个性化的响应速度。</p>
+                        <p>当您需要点击某个元素时，只需将视线停留在该元素上，等待圆圈填充完成即可。如果中途移开视线，点击操作会被取消。</p>
+                    </div>
+                    <div class="section-image">
+                        <img src="https://via.placeholder.com/400x300" alt="使用技巧示意图">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">高级功能</h2>
+                <div class="section-content">
+                    <div class="section-text">
+                        <p>除了基本的点击操作，系统还支持滚动、拖拽等高级功能。通过特定的注视模式，您可以轻松完成各种复杂的操作。</p>
+                        <p>系统会自动学习您的使用习惯，提供更智能的预测和建议，让操作更加流畅自然。</p>
+                    </div>
+                    <div class="section-image">
+                        <img src="https://via.placeholder.com/400x300" alt="高级功能示意图">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">个性化设置</h2>
+                <div class="section-content">
+                    <div class="section-text">
+                        <p>系统提供了丰富的个性化设置选项，您可以根据自己的使用习惯调整各种参数。比如注视时间、点击灵敏度、滚动速度等都可以自定义。</p>
+                        <p>通过不断的调整和适应，您将获得最适合自己的使用体验。系统会记住您的偏好设置，下次使用时自动应用。</p>
+                    </div>
+                    <div class="section-image">
+                        <img src="https://via.placeholder.com/400x300" alt="个性化设置示意图">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">常见问题解答</h2>
+                <div class="section-content">
+                    <div class="section-text">
+                        <p>Q: 使用眼动控制时需要注意什么？</p>
+                        <p>A: 保持适当的坐姿，确保眼睛与屏幕保持适当距离。避免强光直射，保持环境光线适中。</p>
+                        <p>Q: 系统支持哪些类型的操作？</p>
+                        <p>A: 支持点击、双击、滚动、拖拽等基本操作，以及一些特殊的手势操作。</p>
+                    </div>
+                    <div class="section-image">
+                        <img src="https://via.placeholder.com/400x300" alt="常见问题示意图">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">使用建议</h2>
+                <div class="section-content">
+                    <div class="section-text">
+                        <p>建议您在使用初期多进行练习，熟悉系统的响应特点。可以从简单的操作开始，逐步尝试更复杂的功能。</p>
+                        <p>如果遇到操作不准确的情况，可以适当调整注视时间或灵敏度设置。系统会不断学习您的使用习惯，提供更好的体验。</p>
+                    </div>
+                    <div class="section-image">
+                        <img src="https://via.placeholder.com/400x300" alt="使用建议示意图">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">技术支持</h2>
+                <div class="section-content">
+                    <div class="section-text">
+                        <p>如果您在使用过程中遇到任何问题，可以随时联系我们的技术支持团队。我们提供7*24小时在线支持，确保您能够顺利使用系统。</p>
+                        <p>您也可以通过我们的官方网站查看详细的使用教程和常见问题解答。</p>
+                    </div>
+                    <div class="section-image">
+                        <img src="https://via.placeholder.com/400x300" alt="技术支持示意图">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">未来展望</h2>
+                <div class="section-content">
+                    <div class="section-text">
+                        <p>眼动控制技术正在不断发展，未来将支持更多创新功能。我们正在研发更智能的预测算法，更自然的交互方式，以及更广泛的应用场景。</p>
+                        <p>期待与您一起见证这项技术的进步，为更多用户带来便利。</p>
+                    </div>
+                    <div class="section-image">
+                        <img src="https://via.placeholder.com/400x300" alt="未来展望示意图">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导航提示 -->
+    <div class="nav-hint bottom" id="bottomHint">
+        <p>注视滑动条的最下端可以下滑哦</p>
+    </div>
+    <div class="nav-hint top" id="topHint">
+        <p>注视滑动条的最上端可以上滑哦</p>
+    </div>
+
+    <!-- 完成页面 -->
+    <div class="complete-page" id="completePage">
+        <h2 class="complete-title">恭喜完成！</h2>
+        <p class="complete-text">恭喜你，已经学会眼动控制啦，<br>接下来试试关掉这个教程吧！</p>
+    </div>
+
+    <script>
+        let bottomClickCount = 0;
+        let topClickCount = 0;
+        let isScrolling = false;
+
+        function startTutorial() {
+            document.getElementById('homePage').style.display = 'none';
+            document.getElementById('contentPage').style.display = 'block';
+            initScrollBar();
+        }
+
+        function initScrollBar() {
+            const scrollBar = document.getElementById('scrollBar');
+            const scrollThumb = document.getElementById('scrollThumb');
+            const content = document.querySelector('.content');
+            const bottomHint = document.getElementById('bottomHint');
+            const topHint = document.getElementById('topHint');
+            const completePage = document.getElementById('completePage');
+
+            const contentHeight = content.offsetHeight;
+            const windowHeight = window.innerHeight;
+            const maxScroll = contentHeight - windowHeight;
+
+            // 设置滚动条高度
+            const thumbHeight = (windowHeight / contentHeight) * windowHeight;
+            scrollThumb.style.height = `${thumbHeight}px`;
+
+            // 添加状态变量
+            let hasReachedBottom = false;
+            let currentScrollTop = 0;
+
+            // 定义每次翻页的距离（窗口高度的40%）
+            const pageScrollDistance = windowHeight * 0.4;
+
+            // 更新滚动条位置
+            function updateScrollBar(scrollTop) {
+                const scrollPercent = scrollTop / maxScroll;
+                const thumbTop = scrollPercent * (windowHeight - thumbHeight);
+                scrollThumb.style.top = `${thumbTop}px`;
+            }
+
+            // 滚动内容
+            function scrollContent(scrollTop) {
+                currentScrollTop = Math.max(0, Math.min(scrollTop, maxScroll));
+                content.style.transform = `translateY(${-currentScrollTop}px)`;
+                updateScrollBar(currentScrollTop);
+
+                // 检查是否到达底部
+                if (currentScrollTop >= maxScroll) {
+                    bottomHint.classList.remove('active');
+                    topHint.classList.add('active');
+                    hasReachedBottom = true;
+                } else {
+                    bottomHint.classList.add('active');
+                    topHint.classList.remove('active');
+                }
+
+                // 检查是否到达顶部，且已经到达过底部
+                if (currentScrollTop <= 0 && hasReachedBottom) {
+                    // 延时1秒后显示完成页面
+                    setTimeout(() => {
+                        // 隐藏所有导航提示
+                        bottomHint.classList.remove('active');
+                        topHint.classList.remove('active');
+                        // 隐藏内容页面
+                        document.getElementById('contentPage').style.display = 'none';
+                        // 显示完成页面
+                        document.getElementById('completePage').style.display = 'block';
+                    }, 1000);
+                }
+            }
+
+            // 点击滚动条
+            scrollBar.addEventListener('click', (e) => {
+                const rect = scrollBar.getBoundingClientRect();
+                const clickY = e.clientY - rect.top;
+                
+                // 判断点击位置
+                if (clickY < 20) {
+                    // 点击顶部，向上翻页
+                    scrollContent(currentScrollTop - pageScrollDistance);
+                } else if (clickY > windowHeight - 20) {
+                    // 点击底部，向下翻页
+                    scrollContent(currentScrollTop + pageScrollDistance);
+                } else {
+                    // 点击中间位置，直接跳转到对应位置
+                    const scrollPercent = clickY / windowHeight;
+                    const scrollTop = scrollPercent * maxScroll;
+                    scrollContent(scrollTop);
+                }
+            });
+
+            // 监听滚动事件
+            window.addEventListener('scroll', () => {
+                const scrollTop = window.pageYOffset;
+                scrollContent(scrollTop);
+            });
+
+            // 初始化滚动位置和提示
+            scrollContent(0);
+            bottomHint.classList.add('active');
+        }
+    </script>
+</body>
+</html> 
