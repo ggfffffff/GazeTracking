@@ -454,10 +454,10 @@
                 const clickY = e.clientY - rect.top;
                 
                 // 判断点击位置
-                if (clickY < 20) {
+                if (clickY < 40) {
                     // 点击顶部，向上翻页
                     scrollContent(currentScrollTop - pageScrollDistance);
-                } else if (clickY > windowHeight - 20) {
+                } else if (clickY > windowHeight - 40) {
                     // 点击底部，向下翻页
                     scrollContent(currentScrollTop + pageScrollDistance);
                 } else {
@@ -512,30 +512,18 @@
             // 首页区域
             if (document.getElementById('homePage').style.display !== 'none') {
                 // 获取实际元素
-                const title = document.querySelector('.home-title');
-                const desc = document.querySelector('.home-desc');
                 const button = document.querySelector('.start-button');
                 
                 // 获取元素的位置和大小
-                const titleRect = title.getBoundingClientRect();
-                const descRect = desc.getBoundingClientRect();
                 const buttonRect = button.getBoundingClientRect();
                 
-                // 标题区
-                createRegionMarker('text',
-                    titleRect.left,
-                    titleRect.top,
-                    titleRect.right,
-                    titleRect.bottom
-                );
-                
-                // 说明文字区
-                createRegionMarker('text',
-                    descRect.left,
-                    descRect.top,
-                    descRect.right,
-                    descRect.bottom
-                );
+                // 显示按钮坐标
+                console.log('开始按钮坐标：', {
+                    left: buttonRect.left,
+                    top: buttonRect.top,
+                    right: buttonRect.right,
+                    bottom: buttonRect.bottom
+                });
                 
                 // 按钮区
                 createRegionMarker('button',
@@ -552,18 +540,34 @@
                 const scrollBar = document.getElementById('scrollBar');
                 const scrollBarRect = scrollBar.getBoundingClientRect();
                 
+                // 显示滑动条坐标
+                console.log('滑动条坐标：', {
+                    top: {
+                        left: scrollBarRect.left,
+                        top: scrollBarRect.top,
+                        right: scrollBarRect.right,
+                        bottom: scrollBarRect.top + 40
+                    },
+                    bottom: {
+                        left: scrollBarRect.left,
+                        top: scrollBarRect.bottom - 40,
+                        right: scrollBarRect.right,
+                        bottom: scrollBarRect.bottom
+                    }
+                });
+                
                 // 滑动条顶部按钮区
                 createRegionMarker('button',
                     scrollBarRect.left,
                     scrollBarRect.top,
                     scrollBarRect.right,
-                    scrollBarRect.top + 20
+                    scrollBarRect.top + 40
                 );
                 
                 // 滑动条底部按钮区
                 createRegionMarker('button',
                     scrollBarRect.left,
-                    scrollBarRect.bottom - 20,
+                    scrollBarRect.bottom - 40,
                     scrollBarRect.right,
                     scrollBarRect.bottom
                 );
@@ -649,7 +653,39 @@
         }
         
         // 在页面加载和窗口大小改变时更新区域标记
-        window.addEventListener('load', updateRegionMarkers);
+        window.addEventListener('load', () => {
+            updateRegionMarkers();
+            // 输出首页按钮坐标
+            const homeButton = document.querySelector('.start-button');
+            if (homeButton) {
+                const buttonRect = homeButton.getBoundingClientRect();
+                console.log('首页"开始试用"按钮坐标：');
+                console.log('左边界：', buttonRect.left);
+                console.log('上边界：', buttonRect.top);
+                console.log('右边界：', buttonRect.right);
+                console.log('下边界：', buttonRect.bottom);
+                console.log('宽度：', buttonRect.width);
+                console.log('高度：', buttonRect.height);
+            }
+            
+            // 输出滑动条坐标
+            const scrollBar = document.getElementById('scrollBar');
+            if (scrollBar) {
+                const scrollBarRect = scrollBar.getBoundingClientRect();
+                console.log('\n滑动条坐标：');
+                console.log('顶部按钮区域：');
+                console.log('左边界：', scrollBarRect.left);
+                console.log('上边界：', scrollBarRect.top);
+                console.log('右边界：', scrollBarRect.right);
+                console.log('下边界：', scrollBarRect.top + 40);
+                
+                console.log('\n底部按钮区域：');
+                console.log('左边界：', scrollBarRect.left);
+                console.log('上边界：', scrollBarRect.bottom - 40);
+                console.log('右边界：', scrollBarRect.right);
+                console.log('下边界：', scrollBarRect.bottom);
+            }
+        });
         window.addEventListener('resize', updateRegionMarkers);
     </script>
 </body>

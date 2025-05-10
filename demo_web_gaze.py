@@ -4,8 +4,10 @@ import pyautogui
 import json
 import time
 import tkinter as tk
+import webbrowser
 from gaze_tracking import GazeTracking
 from filterpy.kalman import KalmanFilter
+import os
 
 # ==============================
 # 可调参数
@@ -108,8 +110,23 @@ def is_in_dead_zone(point1, point2):
     """
     return abs(point1[0] - point2[0]) <= DEAD_ZONE and abs(point1[1] - point2[1]) <= DEAD_ZONE
 
+def open_webpage():
+    """打开网页"""
+    # 获取当前文件所在目录
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 构建tutorial.html的完整路径
+    html_path = os.path.join(current_dir, "tutorial.html")
+    # 使用默认浏览器打开网页
+    webbrowser.open('file://' + html_path)
+
 def main():
-    """主程序：读取摄像头、计算 gaze 位置并在透明窗口上显示 + 停留点击"""
+    """主程序：打开网页并启动眼动识别"""
+    # 首先打开网页
+    open_webpage()
+    
+    # 等待1秒，让浏览器有时间打开
+    time.sleep(1)
+    
     calibration_data = load_calibration()
     if not calibration_data:
         print("No calibration data. Please run calibration first.")
@@ -132,7 +149,7 @@ def main():
 
     # ----------- 创建透明 Tkinter 窗口 -----------
     root = tk.Tk()
-    root.title("Gaze Transparent Demo - Click")
+    root.title("Gaze Tracking Overlay")
     root.geometry(f"{screen_width}x{screen_height}+0+0")
     # 透明背景
     root.configure(bg='black')
@@ -269,4 +286,4 @@ def main():
     root.destroy()
 
 if __name__ == "__main__":
-    main()
+    main() 
