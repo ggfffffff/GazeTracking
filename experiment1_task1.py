@@ -9,9 +9,17 @@ from scipy.stats import percentileofscore
 import os
 from gaze_tracking import GazeTracking
 from filterpy.kalman import KalmanFilter
+import pyautogui
+
+# 导入不同的眼动追踪模型
+from gaze_tracking_basic import get_gaze_coordinates as get_gaze_basic
+from gaze_tracking_coordinate import get_gaze_coordinates as get_gaze_coordinate
+from gaze_tracking_kalman import get_gaze_coordinates as get_gaze_kalman, create_kalman_filter_acc
+from gaze_tracking_multifilter import get_gaze_coordinates as get_gaze_multifilter, create_kalman_filter_acc as create_kf_multifilter
+from gaze_tracking_optimized import get_gaze_coordinates as get_gaze_optimized, create_kalman_filter_acc as create_kf_optimized
 
 class FixedPointTask:
-    def __init__(self, subject_name):
+    def __init__(self, subject_name, model_type="optimized"):
         self.screen_width = 1920
         self.screen_height = 1080
         self.target_radius = 20  # 目标点半径
@@ -42,6 +50,10 @@ class FixedPointTask:
         self.webcam = cv2.VideoCapture(0)
         self.calibration_data = self.load_calibration()
         
+        # 选择眼动追踪模型
+        self.model_type = model_type
+        self.initialize_model()
+        
         # 初始化卡尔曼滤波器
         self.kf = self.create_kalman_filter_acc()
         self.initialized = False
@@ -50,6 +62,26 @@ class FixedPointTask:
         self.last_stable_point = None
         self.last_update_time = time.time()
             
+    def initialize_model(self):
+        """初始化选择的眼动追踪模型"""
+        if self.model_type == "basic":
+            self.get_gaze_coordinates = lambda hr, vr: get_gaze_basic(hr, vr, self.calibration_data)
+            self.kf = None
+        elif self.model_type == "coordinate":
+            self.get_gaze_coordinates = lambda hr, vr: get_gaze_coordinate(hr, vr, self.calibration_data)
+            self.kf = None
+        elif self.model_type == "kalman":
+            self.kf = create_kalman_filter_acc()
+            self.get_gaze_coordinates = lambda hr, vr: get_gaze_kalman(hr, vr, self.calibration_data, self.kf)
+        elif self.model_type == "multifilter":
+            self.kf = create_kf_multifilter()
+            self.get_gaze_coordinates = lambda hr, vr: get_gaze_multifilter(hr, vr, self.calibration_data, self.kf)
+        elif self.model_type == "optimized":
+            self.kf = create_kf_optimized()
+            self.get_gaze_coordinates = lambda hr, vr: get_gaze_optimized(hr, vr, self.calibration_data, self.kf)
+        else:
+            raise ValueError(f"未知的模型类型: {self.model_type}")
+        
     def load_calibration(self):
         """加载校准数据"""
         try:
@@ -318,7 +350,17 @@ class FixedPointTask:
         print("实验完成！")
 
 if __name__ == "__main__":
-    # 在这里修改受试者姓名
-    subject_name = "test_subject"
-    experiment = FixedPointTask(subject_name)
+    # 在这里修改受试者姓名和模型类型
+    subject_name = "test_subject"  # 修改为实际的受试者姓名
+    
+    # 可用的模型类型：
+    # "basic" - 基础版本
+    # "coordinate" - 坐标映射版本
+    # "kalman" - 卡尔曼滤波版本
+    # "multifilter" - 多重滤波版本
+    # "optimized" - 优化版本
+    model_type = "optimized"  # 修改为想要使用的模型类型
+    
+    # 创建实验实例并运行
+    experiment = FixedPointTask(subject_name, model_type)
     experiment.run() 

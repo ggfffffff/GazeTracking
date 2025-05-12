@@ -1,0 +1,84 @@
+{
+    "buttons": [
+        {
+            "id": 1,
+            "name": "Button 1",
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+        },
+        {
+            "id": 2,
+            "name": "Button 2",
+            "x": 300,
+            "y": 100,
+            "width": 100,
+            "height": 100
+        },
+        {
+            "id": 3,
+            "name": "Button 3",
+            "x": 500,
+            "y": 100,
+            "width": 100,
+            "height": 100
+        },
+        {
+            "id": 4,
+            "name": "Button 4",
+            "x": 700,
+            "y": 100,
+            "width": 100,
+            "height": 100
+        },
+        {
+            "id": 5,
+            "name": "Button 5",
+            "x": 900,
+            "y": 100,
+            "width": 100,
+            "height": 100
+        },
+        {
+            "id": 6,
+            "name": "Button 6",
+            "x": 100,
+            "y": 300,
+            "width": 100,
+            "height": 100
+        },
+        {
+            "id": 7,
+            "name": "Button 7",
+            "x": 300,
+            "y": 300,
+            "width": 100,
+            "height": 100
+        },
+        {
+            "id": 8,
+            "name": "Button 8",
+            "x": 500,
+            "y": 300,
+            "width": 100,
+            "height": 100
+        },
+        {
+            "id": 9,
+            "name": "Button 9",
+            "x": 700,
+            "y": 300,
+            "width": 100,
+            "height": 100
+        },
+        {
+            "id": 10,
+            "name": "Button 10",
+            "x": 900,
+            "y": 300,
+            "width": 100,
+            "height": 100
+        }
+    ]
+} 

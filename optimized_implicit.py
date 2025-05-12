@@ -6,6 +6,10 @@ import time
 import tkinter as tk
 from gaze_tracking import GazeTracking
 from filterpy.kalman import KalmanFilter
+import win32gui
+import win32con
+import win32process
+import psutil
 
 # ==============================
 # 可调参数
@@ -17,20 +21,106 @@ DEAD_ZONE = 5                  # 死区范围（像素），在此范围内的�
 MIN_VELOCITY_THRESHOLD = 0.5   # 最小速度阈值，低于此速度视为静止
 Y_OFFSET = -10                 # Y轴偏移量，用于微调点击位置
 
+# 隐式校准相关参数
+IMPLICIT_CALIBRATION_DURATION = 2  # 隐式校准采样时长(秒)
+IMPLICIT_CALIBRATION_INTERVAL = 0.1  # 隐式校准采样间隔(秒)
+IMPLICIT_CALIBRATION_THRESHOLD = 150  # 隐式校准触发阈值(像素)
+
 # ==============================
 # 校准文件路径
 CALIBRATION_FILE = "calibration-5.json"
+IMPLICIT_CALIBRATION_FILE = "calibration-implicit.json"
+BUTTONS_FILE = "buttons.json"  # 按钮位置配置文件
 # 获取屏幕分辨率
 screen_width, screen_height = pyautogui.size()
+
+
+def is_point_in_button(point, button):
+    """判断点是否在按钮区域内"""
+    return (button["x"] <= point[0] <= button["x"] + button["width"] and
+            button["y"] <= point[1] <= button["y"] + button["height"])
+
+def load_buttons():
+    """加载按钮位置配置"""
+    try:
+        with open(BUTTONS_FILE, "r", encoding='utf-8') as f:
+            return json.load(f)["buttons"]
+    except FileNotFoundError:
+        print(f"按钮配置文件 {BUTTONS_FILE} 未找到")
+        return []
+    except json.JSONDecodeError:
+        print(f"按钮配置文件 {BUTTONS_FILE} 格式错误")
+        return []
+    except KeyError:
+        print(f"按钮配置文件 {BUTTONS_FILE} 缺少 'buttons' 键")
+        return []
+
+def collect_implicit_calibration_data(gaze, calibration_data, button):
+    """收集隐式校准数据"""
+    samples = []
+    start_time = time.time()
+    
+    while time.time() - start_time < IMPLICIT_CALIBRATION_DURATION:
+        # 获取眼动数据
+        hr = gaze.horizontal_ratio()
+        vr = gaze.vertical_ratio()
+        
+        if hr is not None and vr is not None:
+            samples.append((hr, vr))
+        
+        time.sleep(IMPLICIT_CALIBRATION_INTERVAL)
+    
+    if len(samples) > 0:
+        # 计算平均值
+        avg_hr = sum(s[0] for s in samples) / len(samples)
+        avg_vr = sum(s[1] for s in samples) / len(samples)
+        
+        # 计算按钮中心点
+        button_center_x = button["x"] + button["width"] // 2
+        button_center_y = button["y"] + button["height"] // 2
+        
+        # 添加到校准数据
+        calibration_data.append({
+            "hr": avg_hr,
+            "vr": avg_vr,
+            "x": button_center_x,
+            "y": button_center_y,
+            "button_name": button["name"]  # 记录按钮名称，方便调试
+        })
+        
+        # 保存更新后的校准数据
+        save_calibration_data(calibration_data)
+        return True
+    
+    return False
+
+def save_calibration_data(calibration_data):
+    """保存校准数据到文件"""
+    try:
+        with open(IMPLICIT_CALIBRATION_FILE, "w") as f:
+            json.dump(calibration_data, f, indent=4)
+    except Exception as e:
+        print(f"保存校准数据出错: {e}")
 
 def load_calibration():
     """加载校准数据"""
     try:
-        with open(CALIBRATION_FILE, "r") as f:
-            return json.load(f)
+        # 首先尝试加载隐式校准数据
+        with open(IMPLICIT_CALIBRATION_FILE, "r") as f:
+            implicit_data = json.load(f)
     except FileNotFoundError:
-        print("Calibration file not found. Please run calibration.py first.")
-        return None
+        implicit_data = []
+    
+    try:
+        # 然后加载显式校准数据
+        with open(CALIBRATION_FILE, "r") as f:
+            explicit_data = json.load(f)
+    except FileNotFoundError:
+        print("显式校准文件未找到。请先运行 calibration.py 进行校准。")
+        return implicit_data
+    
+    # 合并两种校准数据
+    return explicit_data + implicit_data
 
 def get_gaze_coordinates(hr, vr, calibration_data):
     """
@@ -113,6 +203,12 @@ def main():
     calibration_data = load_calibration()
     if not calibration_data:
         print("No calibration data. Please run calibration first.")
+        return
+
+    # 加载按钮配置
+    buttons = load_buttons()
+    if not buttons:
+        print("未找到按钮配置，请确保 buttons.json 文件存在且格式正确")
         return
 
     # 初始化眼动跟踪和摄像头
@@ -250,6 +346,14 @@ def main():
 
                                 # 重置停留
                                 dwell_center = None
+                                
+                                # 检查是否在按钮上点击
+                                for button in buttons:
+                                    if is_point_in_button(dwell_center, button):
+                                        # 收集隐式校准数据
+                                        if collect_implicit_calibration_data(gaze, calibration_data, button):
+                                            print(f"收集到新的隐式校准数据 - 按钮: {button['name']}")
+                                        break
                         else:
                             # 超出范围，重新记录新的停留中心
                             dwell_center = averaged_point

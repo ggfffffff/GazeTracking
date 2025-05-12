@@ -11,7 +11,7 @@ from gaze_tracking import GazeTracking
 from filterpy.kalman import KalmanFilter
 
 class TrackingStabilityTask:
-    def __init__(self, subject_name):
+    def __init__(self, subject_name, model_type):
         self.screen_width = 1920
         self.screen_height = 1080
         self.target_radius = 10  # 目标点半径
@@ -25,7 +25,7 @@ class TrackingStabilityTask:
         self.raw_gaze_points = []  # 原始注视点数据
         
         # 创建结果目录
-        self.results_dir = f"E1T2_{subject_name}"
+        self.results_dir = f"E1T2_{subject_name}_{model_type}"
         if not os.path.exists(self.results_dir):
             os.makedirs(self.results_dir)
             
@@ -399,7 +399,17 @@ class TrackingStabilityTask:
         print("实验完成！")
 
 if __name__ == "__main__":
-    # 在这里修改受试者姓名
-    subject_name = "test_subject"
-    experiment = TrackingStabilityTask(subject_name)
+    # 在这里修改受试者姓名和模型类型
+    subject_name = "test_subject"  # 修改为实际的受试者姓名
+    
+    # 可用的模型类型：
+    # "basic" - 基础版本
+    # "coordinate" - 坐标映射版本
+    # "kalman" - 卡尔曼滤波版本
+    # "multifilter" - 多重滤波版本
+    # "optimized" - 优化版本
+    model_type = "optimized"  # 修改为想要使用的模型类型
+    
+    # 创建实验实例并运行
+    experiment = TrackingStabilityTask(subject_name, model_type)
     experiment.run() 
