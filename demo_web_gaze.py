@@ -52,6 +52,11 @@ def get_gaze_coordinates(hr, vr, calibration_data):
 
     gaze_x = int(np.polyval(poly_x, hr))
     gaze_y = int(np.polyval(poly_y, vr)) + Y_OFFSET  # 添加Y轴偏移
+    
+    # 添加边界限制
+    gaze_x = max(0, min(gaze_x, screen_width))
+    gaze_y = max(0, min(gaze_y, screen_height))
+    
     return gaze_x, gaze_y
 
 def create_kalman_filter_acc():

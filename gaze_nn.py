@@ -66,6 +66,11 @@ def get_gaze_coordinates_nn(hr, vr, model):
     input_data = np.array([[hr, vr]])
     pred = model.predict(input_data, verbose=0)
     gaze_x, gaze_y = int(pred[0][0]), int(pred[0][1])
+    
+    # 添加边界限制
+    gaze_x = max(0, min(gaze_x, screen_width))
+    gaze_y = max(0, min(gaze_y, screen_height))
+    
     return gaze_x, gaze_y
 
 if __name__ == "__main__":

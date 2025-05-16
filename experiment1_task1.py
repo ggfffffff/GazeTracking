@@ -24,7 +24,7 @@ class FixedPointTask:
         self.screen_height = 1080
         self.target_radius = 20  # 目标点半径
         self.gaze_threshold = 100  # 注视判定阈值（像素）
-        self.sample_duration = 2  # 采样持续时间（秒）
+        self.sample_duration = 5  # 采样持续时间（秒）
         self.interval_duration = 1  # 间隔时间（秒）
         self.num_targets = 5  # 目标点数量
         
@@ -34,7 +34,7 @@ class FixedPointTask:
         self.errors = []         # 误差数据
         
         # 创建结果目录
-        self.results_dir = f"E1T1_{subject_name}"
+        self.results_dir = f"E1T1_{subject_name}_{model_type}"
         if not os.path.exists(self.results_dir):
             os.makedirs(self.results_dir)
             
@@ -78,7 +78,7 @@ class FixedPointTask:
             self.get_gaze_coordinates = lambda hr, vr: get_gaze_multifilter(hr, vr, self.calibration_data, self.kf)
         elif self.model_type == "optimized":
             self.kf = create_kf_optimized()
-            self.get_gaze_coordinates = lambda hr, vr: get_gaze_optimized(hr, vr, self.calibration_data, self.kf)
+            self.get_gaze_coordinates = lambda hr, vr: get_gaze_optimized(hr, vr, self.calibration_data)
         else:
             raise ValueError(f"未知的模型类型: {self.model_type}")
         
@@ -107,6 +107,11 @@ class FixedPointTask:
 
         gaze_x = int(np.polyval(poly_x, hr))
         gaze_y = int(np.polyval(poly_y, vr)) + self.y_offset
+        
+        # 添加边界限制
+        gaze_x = max(0, min(gaze_x, self.screen_width))
+        gaze_y = max(0, min(gaze_y, self.screen_height))
+        
         return gaze_x, gaze_y
         
     def create_kalman_filter_acc(self):
@@ -242,10 +247,27 @@ class FixedPointTask:
             target_gaze_points = []
             
             while time.time() - start_time < self.sample_duration:
+                # 创建新的帧
+                frame = np.zeros((self.screen_height, self.screen_width, 3), dtype=np.uint8)
+                
+                # 绘制目标点
+                cv2.circle(frame, target_point, self.target_radius, (0, 255, 0), -1)
+                
+                # 获取并显示实时视线位置
                 gaze_point = self.get_filtered_gaze_point()
                 if gaze_point is not None:
+                    cv2.circle(frame, gaze_point, 5, (0, 0, 255), -1)  # 红色小圆点表示视线位置
                     target_gaze_points.append(gaze_point)
-                time.sleep(0.01)  # 控制采样频率
+                
+                # 计算并显示倒计时
+                remaining_time = int(self.sample_duration - (time.time() - start_time))
+                if remaining_time > 0:
+                    cv2.putText(frame, str(remaining_time), 
+                              (self.screen_width//2 - 30, self.screen_height//2), 
+                              cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
+                
+                cv2.imshow("Experiment", frame)
+                cv2.waitKey(1)
                 
             if target_gaze_points:
                 # 计算平均注视点
@@ -302,16 +324,20 @@ class FixedPointTask:
     def save_results(self):
         """保存实验结果"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # 将numpy数组转换为普通列表
+        avg_gaze_list = [gaze.tolist() if isinstance(gaze, np.ndarray) else gaze for gaze in self.gaze_points]
+        
         results = {
             "timestamp": timestamp,
             "metrics": self.calculate_metrics(),
             "target_points": self.target_points,
-            "gaze_points": self.gaze_points,
-            "errors": self.errors,
+            "gaze_points": avg_gaze_list,
+            "errors": [float(err) for err in self.errors],  # 将numpy float转换为Python float
             "raw_data": {
                 "target_points": self.target_points,
-                "gaze_points": self.gaze_points,
-                "errors": self.errors
+                "gaze_points": avg_gaze_list,
+                "errors": [float(err) for err in self.errors]
             }
         }
         
@@ -351,7 +377,7 @@ class FixedPointTask:
 
 if __name__ == "__main__":
     # 在这里修改受试者姓名和模型类型
-    subject_name = "test_subject"  # 修改为实际的受试者姓名
+    subject_name = "gff"  # 修改为实际的受试者姓名
     
     # 可用的模型类型：
     # "basic" - 基础版本

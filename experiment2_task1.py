@@ -25,11 +25,10 @@ from optimized_click import (
 
 # ==============================
 # 实验配置
-SUBJECT_NAME = "test"  # 修改为受试者姓名
+SUBJECT_NAME = "gff"  # 修改为受试者姓名
 USE_IMPLICIT_CALIBRATION = True  # 是否使用隐式校准
 EXPERIMENT_BUTTONS_FILE = "experiment_buttons.json"  # 实验按钮配置文件
-CALIBRATION_FILE = "calibration-5.json"  # 初始校准文件
-IMPLICIT_CALIBRATION_FILE = "calibration-implicit.json"  # 隐式校准文件
+CALIBRATION_FILE = "calibration-5.json"  # 校准文件
 
 # 实验参数
 DURATION_THRESHOLD = 1.0  # 停留阈值(秒)
@@ -44,12 +43,13 @@ Y_OFFSET = -10  # Y轴偏移量
 screen_width, screen_height = pyautogui.size()
 
 class ExperimentData:
-    def __init__(self, subject_name):
+    def __init__(self, subject_name, use_implicit_calibration):
         self.subject_name = subject_name
-        self.experiment_dir = f"E2T1_{subject_name}"
+        self.use_implicit_calibration = use_implicit_calibration
+        self.experiment_dir = f"E2T1_{subject_name}_{'implicit' if use_implicit_calibration else 'explicit'}"
         self.raw_data = []
         self.processed_data = []
-        self.current_round = 0
+        self.current_round = 1  # 从1开始，每个按钮一个round
         self.current_button = None
         self.start_time = None
         
@@ -84,6 +84,10 @@ class ExperimentData:
             'timestamp': time.time() - self.start_time
         })
         
+    def next_round(self):
+        """进入下一轮"""
+        self.current_round += 1
+        
     def save_data(self):
         """保存实验数据"""
         # 保存原始数据
@@ -100,56 +104,93 @@ class ExperimentData:
     def generate_report(self):
         """生成实验报告"""
         processed_df = pd.DataFrame(self.processed_data)
+        raw_df = pd.DataFrame(self.raw_data)
         
-        # 计算每轮的MAE
+        # 计算每轮的指标
         mae_by_round = []
-        hit_rate_by_round = []
-        false_click_rate_by_round = []
+        gaze_hit_rate_by_round = []
         
-        for round_num in range(1, 11):
+        # 定义采样间隔（每隔多少帧采样一次）
+        SAMPLE_INTERVAL = 5
+        # 定义按钮周围的范围（像素）
+        BUTTON_MARGIN = 100
+        
+        for round_num in range(1, 13):  # 12个按钮，12个round
             round_data = processed_df[processed_df['round'] == round_num]
+            round_raw_data = raw_df[raw_df['round'] == round_num]
             
-            # 计算MAE
-            mae = np.mean(np.sqrt(
-                (round_data['click_x'] - round_data['button_x'])**2 +
-                (round_data['click_y'] - round_data['button_y'])**2
-            ))
-            mae_by_round.append(mae)
-            
-            # 计算命中率
-            hits = round_data['hit'].sum()
-            total_clicks = len(round_data)
-            hit_rate = hits / total_clicks if total_clicks > 0 else 0
-            hit_rate_by_round.append(hit_rate)
-            
-            # 计算误触率
-            false_clicks = total_clicks - hits
-            false_click_rate = false_clicks / total_clicks if total_clicks > 0 else 0
-            false_click_rate_by_round.append(false_click_rate)
+            if len(round_data) > 0:  # 确保该轮有数据
+                # 计算MAE
+                mae = np.mean(np.sqrt(
+                    (round_data['click_x'] - round_data['button_x'])**2 +
+                    (round_data['click_y'] - round_data['button_y'])**2
+                ))
+                mae_by_round.append(mae)
+                
+                # 计算注视点命中率
+                if len(round_raw_data) > 0:
+                    # 获取当前按钮的位置
+                    button_x = round_raw_data['button_x'].iloc[0]
+                    button_y = round_raw_data['button_y'].iloc[0]
+                    button_width = 100  # 按钮宽度
+                    button_height = 100  # 按钮高度
+                    
+                    # 每隔SAMPLE_INTERVAL帧采样一次
+                    sampled_data = round_raw_data.iloc[::SAMPLE_INTERVAL]
+                    
+                    # 计算在按钮周围范围内的点
+                    in_range_points = 0
+                    in_button_points = 0
+                    
+                    for _, row in sampled_data.iterrows():
+                        gaze_x, gaze_y = row['gaze_x'], row['gaze_y']
+                        
+                        # 检查是否在按钮周围范围内
+                        if (abs(gaze_x - button_x) <= button_width/2 + BUTTON_MARGIN and 
+                            abs(gaze_y - button_y) <= button_height/2 + BUTTON_MARGIN):
+                            in_range_points += 1
+                            
+                            # 检查是否在按钮区域内
+                            if (abs(gaze_x - button_x) <= button_width/2 and 
+                                abs(gaze_y - button_y) <= button_height/2):
+                                in_button_points += 1
+                    
+                    # 计算命中率 - 修改计算方式
+                    if in_range_points > 0:
+                        gaze_hit_rate = in_button_points / in_range_points
+                    else:
+                        # 如果没有在范围内的点，检查是否有任何注视点
+                        if len(sampled_data) > 0:
+                            # 如果有注视点但都不在范围内，说明注视点可能偏离太远
+                            gaze_hit_rate = 0
+                        else:
+                            # 如果完全没有注视点数据，使用默认值
+                            gaze_hit_rate = 0
+                    
+                    gaze_hit_rate_by_round.append(gaze_hit_rate)
+                else:
+                    gaze_hit_rate_by_round.append(0)
+            else:
+                # 如果该轮没有数据，添加默认值
+                mae_by_round.append(0)
+                gaze_hit_rate_by_round.append(0)
         
         # 绘制趋势图
         plt.figure(figsize=(15, 5))
         
         # MAE趋势
-        plt.subplot(131)
-        plt.plot(range(1, 11), mae_by_round, 'b-o')
+        plt.subplot(121)
+        plt.plot(range(1, 13), mae_by_round, 'b-o')  # 12个round
         plt.title('MAE Trend')
         plt.xlabel('Round')
         plt.ylabel('MAE (pixels)')
         
-        # 命中率趋势
-        plt.subplot(132)
-        plt.plot(range(1, 11), hit_rate_by_round, 'g-o')
-        plt.title('Hit Rate Trend')
+        # 注视点命中率趋势
+        plt.subplot(122)
+        plt.plot(range(1, 13), gaze_hit_rate_by_round, 'g-o')  # 12个round
+        plt.title('Gaze Hit Rate Trend')
         plt.xlabel('Round')
         plt.ylabel('Hit Rate')
-        
-        # 误触率趋势
-        plt.subplot(133)
-        plt.plot(range(1, 11), false_click_rate_by_round, 'r-o')
-        plt.title('False Click Rate Trend')
-        plt.xlabel('Round')
-        plt.ylabel('False Click Rate')
         
         plt.tight_layout()
         plt.savefig(f"{self.experiment_dir}/trend_analysis.png")
@@ -163,15 +204,13 @@ class ExperimentData:
             f.write("Overall Statistics:\n")
             f.write(f"Total Rounds: {len(mae_by_round)}\n")
             f.write(f"Average MAE: {np.mean(mae_by_round):.2f} pixels\n")
-            f.write(f"Average Hit Rate: {np.mean(hit_rate_by_round):.2%}\n")
-            f.write(f"Average False Click Rate: {np.mean(false_click_rate_by_round):.2%}\n\n")
+            f.write(f"Average Gaze Hit Rate: {np.mean(gaze_hit_rate_by_round):.2%}\n\n")
             
             f.write("Round-by-Round Analysis:\n")
             for i in range(len(mae_by_round)):
                 f.write(f"\nRound {i+1}:\n")
                 f.write(f"MAE: {mae_by_round[i]:.2f} pixels\n")
-                f.write(f"Hit Rate: {hit_rate_by_round[i]:.2%}\n")
-                f.write(f"False Click Rate: {false_click_rate_by_round[i]:.2%}\n")
+                f.write(f"Gaze Hit Rate: {gaze_hit_rate_by_round[i]:.2%}\n")
 
 def load_experiment_buttons():
     """加载实验按钮配置"""
@@ -188,10 +227,7 @@ def is_point_in_button(point, button):
             button["y"] <= point[1] <= button["y"] + button["height"])
 
 def collect_implicit_calibration_data(gaze, button):
-    """收集隐式校准数据"""
-    if not USE_IMPLICIT_CALIBRATION:
-        return
-        
+    """收集隐式校准数据并更新校准文件"""
     samples = []
     start_time = time.time()
     
@@ -205,6 +241,7 @@ def collect_implicit_calibration_data(gaze, button):
         time.sleep(0.1)
     
     if len(samples) > 0:
+        # 计算平均值
         avg_hr = sum(s[0] for s in samples) / len(samples)
         avg_vr = sum(s[1] for s in samples) / len(samples)
         
@@ -213,7 +250,7 @@ def collect_implicit_calibration_data(gaze, button):
         
         # 读取现有校准数据
         try:
-            with open(IMPLICIT_CALIBRATION_FILE, "r") as f:
+            with open(CALIBRATION_FILE, "r") as f:
                 calibration_data = json.load(f)
         except FileNotFoundError:
             calibration_data = []
@@ -229,30 +266,29 @@ def collect_implicit_calibration_data(gaze, button):
         
         # 保存更新后的校准数据
         try:
-            with open(IMPLICIT_CALIBRATION_FILE, "w") as f:
+            with open(CALIBRATION_FILE, "w") as f:
                 json.dump(calibration_data, f, indent=4)
+            print(f"已更新校准文件，添加了按钮 {button['name']} 的校准数据")
         except Exception as e:
             print(f"保存校准数据出错: {e}")
 
 class ExperimentUI:
     def __init__(self, experiment_data):
         self.experiment_data = experiment_data
-        self.buttons = load_experiment_buttons()
+        self.buttons = self.calculate_button_positions()
         self.current_button_index = 0
         self.remaining_buttons = list(range(len(self.buttons)))
         random.shuffle(self.remaining_buttons)
         
         # 创建主窗口
         self.root = tk.Tk()
-        self.root.title("Gaze Tracking Experiment - Round 2")
+        self.root.title("Gaze Tracking Experiment")
         self.root.geometry(f"{screen_width}x{screen_height}+0+0")
-        self.root.configure(bg='black')
-        self.root.wm_attributes('-transparentcolor', 'black')
-        self.root.wm_attributes('-topmost', 1)
+        self.root.configure(bg='white')
         
         # 创建Canvas
         self.canvas = tk.Canvas(self.root, width=screen_width, height=screen_height,
-                              bg="black", highlightthickness=0)
+                              bg="white", highlightthickness=0)
         self.canvas.pack()
         
         # 创建按钮显示
@@ -262,20 +298,65 @@ class ExperimentUI:
                 button["x"], button["y"],
                 button["x"] + button["width"],
                 button["y"] + button["height"],
-                fill="gray", outline="white"
+                fill="gray", outline="black"
             )
             self.button_rectangles.append(rect)
         
-        # 创建视线指示点
+        # 创建视线位置指示点
         self.dot_radius = 10
         self.dot = self.canvas.create_oval(0, 0, self.dot_radius*2, self.dot_radius*2,
-                                         fill="red", outline="red")
+                                         fill="blue", outline="blue")
+        
         self.text_item = self.canvas.create_text(50, 50, text="Gaze: ( , )",
-                                               fill="red", font=("Arial", 20, "bold"))
+                                               fill="black", font=("Arial", 20, "bold"))
         
         # 高亮当前按钮
         self.highlight_current_button()
+    
+    def calculate_button_positions(self):
+        """根据屏幕大小计算按钮位置"""
+        # 设置按钮大小
+        button_width = 100
+        button_height = 100
         
+        # 计算边距和间距
+        margin = 50
+        spacing = 200  # 进一步增加间距
+        
+        # 设置三排，每排四个按钮
+        buttons_per_row = 4
+        rows = 3
+        
+        # 计算起始位置
+        total_width = buttons_per_row * button_width + (buttons_per_row - 1) * spacing
+        total_height = rows * button_height + (rows - 1) * spacing
+        
+        start_x = (screen_width - total_width) // 2
+        start_y = (screen_height - total_height) // 2
+        
+        buttons = []
+        button_id = 1
+        
+        for row in range(rows):
+            for col in range(buttons_per_row):
+                if button_id > 12:  # 总共12个按钮
+                    break
+                    
+                x = start_x + col * (button_width + spacing)
+                y = start_y + row * (button_height + spacing)
+                
+                buttons.append({
+                    "id": button_id,
+                    "name": f"Button {button_id}",
+                    "x": x,
+                    "y": y,
+                    "width": button_width,
+                    "height": button_height
+                })
+                button_id += 1
+        
+        return buttons
+    
     def highlight_current_button(self):
         """高亮当前目标按钮"""
         # 重置所有按钮颜色
@@ -297,7 +378,7 @@ class ExperimentUI:
         self.canvas.itemconfig(self.text_item, text=f"Gaze: ({x}, {y})")
     
     def next_button(self):
-        """进入下一个按钮"""
+        """进入下一个按钮（下一个round）"""
         self.current_button_index += 1
         if self.current_button_index < len(self.remaining_buttons):
             self.highlight_current_button()
@@ -313,7 +394,7 @@ class ExperimentUI:
 def main():
     """主程序"""
     # 初始化实验数据
-    experiment_data = ExperimentData(SUBJECT_NAME)
+    experiment_data = ExperimentData(SUBJECT_NAME,USE_IMPLICIT_CALIBRATION)
     experiment_data.start_time = time.time()
     
     # 初始化眼动跟踪
@@ -400,7 +481,7 @@ def main():
                 last_stable_point = averaged_point
                 last_update_time = current_time
                 
-                # 更新UI
+                # 更新UI（显示处理后的位置）
                 ui.update_gaze_position(averaged_point[0], averaged_point[1])
                 
                 # 停留点击逻辑
@@ -428,18 +509,20 @@ def main():
                                         current_button, hit
                                     )
                                     
-                                    # 如果点击成功，收集隐式校准数据
-                                    if hit:
-                                        collect_implicit_calibration_data(gaze, current_button)
+                                    # 收集隐式校准数据并更新校准文件
+                                    collect_implicit_calibration_data(gaze, current_button)
                                     
                                     # 执行点击
                                     pyautogui.click(dwell_center[0], dwell_center[1])
                                     
-                                    # 进入下一个按钮
+                                    # 进入下一个按钮（下一个round）
                                     if not ui.next_button():
                                         # 实验结束
                                         experiment_data.save_data()
                                         return
+                                    
+                                    # 进入下一轮
+                                    experiment_data.next_round()
                                     
                                     # 进入冷却期
                                     in_cooldown = True

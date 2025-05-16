@@ -170,6 +170,10 @@ class TutorialCalibrator:
         gaze_x = int(np.sum(weights * screen_x_vals))
         gaze_y = int(np.sum(weights * screen_y_vals))
         
+        # 添加边界限制
+        gaze_x = max(0, min(gaze_x, self.regions.screen_width))
+        gaze_y = max(0, min(gaze_y, self.regions.screen_height))
+        
         return gaze_x, gaze_y
         
     def distance(self, p1, p2):

@@ -10,6 +10,10 @@ import os
 from gaze_tracking import GazeTracking
 from filterpy.kalman import KalmanFilter
 
+# 设置matplotlib中文字体
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
+
 class TrackingStabilityTask:
     def __init__(self, subject_name, model_type):
         self.screen_width = 1920
@@ -168,42 +172,56 @@ class TrackingStabilityTask:
         return None
         
     def generate_paths(self):
-        """生成三条不同方向的路径"""
-        margin = 200  # 边缘留白
-        path_length = 800  # 路径长度
+        """生成三条不同形状的路径"""
+        # 定义屏幕中心区域
+        center_x = self.screen_width // 2
+        center_y = self.screen_height // 2
+        path_length = 400  # 减小路径长度，确保在中心区域
         
-        # 水平路径
-        start_x1 = margin
-        start_y1 = self.screen_height // 2
-        end_x1 = start_x1 + path_length
-        end_y1 = start_y1
+        # 1. 水平直线路径
+        start_x1 = center_x - path_length // 2
+        start_y1 = center_y
+        end_x1 = center_x + path_length // 2
+        end_y1 = center_y
         self.paths.append({
             'start': (start_x1, start_y1),
             'end': (end_x1, end_y1),
-            'duration': 4.0  # 4秒完成
+            'duration': 4.0,  # 4秒完成
+            'type': 'linear'
         })
         
-        # 45度斜向上路径
-        start_x2 = margin
-        start_y2 = self.screen_height - margin
-        end_x2 = start_x2 + path_length
-        end_y2 = start_y2 - path_length
+        # 2. 45度斜线路径
+        start_x2 = center_x - path_length // 2
+        start_y2 = center_y + path_length // 2
+        end_x2 = center_x + path_length // 2
+        end_y2 = center_y - path_length // 2
         self.paths.append({
             'start': (start_x2, start_y2),
             'end': (end_x2, end_y2),
-            'duration': 4.0
+            'duration': 4.0,
+            'type': 'linear'
         })
         
-        # 垂直路径
-        start_x3 = self.screen_width // 2
-        start_y3 = self.screen_height - margin
-        end_x3 = start_x3
-        end_y3 = start_y3 - path_length
+        # 3. 平滑曲线路径（使用贝塞尔曲线）
+        # 控制点
+        p0 = (center_x - path_length // 2, center_y)  # 起点
+        p1 = (center_x - path_length // 4, center_y - path_length // 2)  # 控制点1
+        p2 = (center_x + path_length // 4, center_y + path_length // 2)  # 控制点2
+        p3 = (center_x + path_length // 2, center_y)  # 终点
+        
         self.paths.append({
-            'start': (start_x3, start_y3),
-            'end': (end_x3, end_y3),
-            'duration': 4.0
+            'start': p0,
+            'end': p3,
+            'control_points': [p1, p2],
+            'duration': 4.0,
+            'type': 'bezier'
         })
+        
+    def get_bezier_point(self, p0, p1, p2, p3, t):
+        """计算贝塞尔曲线上的点"""
+        x = (1-t)**3 * p0[0] + 3*(1-t)**2*t * p1[0] + 3*(1-t)*t**2 * p2[0] + t**3 * p3[0]
+        y = (1-t)**3 * p0[1] + 3*(1-t)**2*t * p1[1] + 3*(1-t)*t**2 * p2[1] + t**3 * p3[1]
+        return (int(x), int(y))
         
     def calculate_tde(self, target_points, gaze_points):
         """计算轨迹偏移误差（Trajectory Deviation Error）"""
@@ -242,56 +260,85 @@ class TrackingStabilityTask:
         for path_idx, path in enumerate(self.paths):
             print(f"开始第 {path_idx + 1} 条路径...")
             
-            # 计算路径点
-            start_point = path['start']
-            end_point = path['end']
-            duration = path['duration']
-            
-            # 计算移动速度
-            dx = (end_point[0] - start_point[0]) / (duration * 30)  # 假设30fps
-            dy = (end_point[1] - start_point[1]) / (duration * 30)
-            
             # 当前路径的数据
             current_path_points = []
             current_gaze_points = []
             current_raw_gaze_points = []
             
-            # 开始移动
-            current_x, current_y = start_point
+            # 准备阶段：显示固定起始点，等待用户视线稳定
+            print("请将视线移动到绿色起始点...")
+            stable_count = 0
+            required_stable_frames = 30
+            start_time = time.time()
+            
+            while stable_count < required_stable_frames:
+                frame = np.zeros((self.screen_height, self.screen_width, 3), dtype=np.uint8)
+                cv2.circle(frame, path['start'], self.target_radius, (0, 255, 0), -1)
+                
+                gaze_point = self.get_filtered_gaze_point()
+                if gaze_point is not None:
+                    cv2.circle(frame, gaze_point, 5, (0, 0, 255), -1)
+                    
+                    distance = np.sqrt((gaze_point[0] - path['start'][0])**2 + (gaze_point[1] - path['start'][1])**2)
+                    if distance < self.gaze_threshold:
+                        stable_count += 1
+                    else:
+                        stable_count = 0
+                
+                cv2.imshow("Experiment", frame)
+                if cv2.waitKey(1) & 0xFF == 27:
+                    return
+                    
+                if time.time() - start_time > 5:
+                    break
+            
+            print("开始追踪...")
             start_time = time.time()
             frame_count = 0
             
-            while time.time() - start_time < duration:
-                # 更新目标点位置
-                current_x += dx
-                current_y += dy
-                current_point = (int(current_x), int(current_y))
+            while time.time() - start_time < path['duration']:
+                t = (time.time() - start_time) / path['duration']
+                
+                if path['type'] == 'linear':
+                    # 线性插值
+                    current_x = int(path['start'][0] + t * (path['end'][0] - path['start'][0]))
+                    current_y = int(path['start'][1] + t * (path['end'][1] - path['start'][1]))
+                    current_point = (current_x, current_y)
+                else:
+                    # 贝塞尔曲线
+                    current_point = self.get_bezier_point(
+                        path['start'],
+                        path['control_points'][0],
+                        path['control_points'][1],
+                        path['end'],
+                        t
+                    )
+                
                 current_path_points.append(current_point)
                 
-                # 获取注视点
                 gaze_point = self.get_filtered_gaze_point()
                 if gaze_point is not None:
                     current_gaze_points.append(gaze_point)
                     current_raw_gaze_points.append(gaze_point)
                 
-                # 显示画面
                 frame = np.zeros((self.screen_height, self.screen_width, 3), dtype=np.uint8)
                 cv2.circle(frame, current_point, self.target_radius, (0, 255, 0), -1)
+                
+                if gaze_point is not None:
+                    cv2.circle(frame, gaze_point, 5, (0, 0, 255), -1)
+                
                 cv2.imshow("Experiment", frame)
                 
-                # 控制帧率
                 frame_count += 1
                 time.sleep(max(0, 1/30 - (time.time() - start_time - frame_count/30)))
                 
-                if cv2.waitKey(1) & 0xFF == 27:  # ESC键退出
+                if cv2.waitKey(1) & 0xFF == 27:
                     return
                     
-            # 保存当前路径的数据
             self.paths[path_idx]['points'] = current_path_points
             self.gaze_points.append(current_gaze_points)
             self.raw_gaze_points.append(current_raw_gaze_points)
             
-            # 路径间暂停
             time.sleep(1)
             
         cv2.destroyAllWindows()
@@ -329,21 +376,21 @@ class TrackingStabilityTask:
             target_points = path['points']
             target_x = [p[0] for p in target_points]
             target_y = [p[1] for p in target_points]
-            plt.plot(target_x, target_y, 'g-', label='理想轨迹', alpha=0.5)
+            plt.plot(target_x, target_y, 'g-', label='Ideal Trajectory', alpha=0.5)
             
             # 绘制原始注视轨迹
             raw_gaze_points = self.raw_gaze_points[path_idx]
             raw_x = [p[0] for p in raw_gaze_points]
             raw_y = [p[1] for p in raw_gaze_points]
-            plt.plot(raw_x, raw_y, 'r.', label='原始注视点', alpha=0.3)
+            plt.plot(raw_x, raw_y, 'r.', label='Raw Gaze Points', alpha=0.3)
             
             # 绘制滤波后的轨迹
             gaze_points = self.gaze_points[path_idx]
             gaze_x = [p[0] for p in gaze_points]
             gaze_y = [p[1] for p in gaze_points]
-            plt.plot(gaze_x, gaze_y, 'b-', label='滤波后轨迹')
+            plt.plot(gaze_x, gaze_y, 'b-', label='Filtered Trajectory')
             
-            plt.title(f'路径 {path_idx + 1}')
+            plt.title(f'Path {path_idx + 1}')
             plt.legend()
             plt.grid(True)
             
@@ -368,12 +415,24 @@ class TrackingStabilityTask:
             
         # 保存CSV格式的原始数据
         for path_idx, path in enumerate(self.paths):
+            # 获取目标点和注视点
+            target_points = path['points']
+            gaze_points = self.gaze_points[path_idx]
+            
+            # 确保数据长度一致
+            min_length = min(len(target_points), len(gaze_points))
+            target_points = target_points[:min_length]
+            gaze_points = gaze_points[:min_length]
+            
+            # 准备数据
             raw_data = np.column_stack((
-                [p[0] for p in path['points']],
-                [p[1] for p in path['points']],
-                [p[0] for p in self.gaze_points[path_idx]],
-                [p[1] for p in self.gaze_points[path_idx]]
+                [p[0] for p in target_points],
+                [p[1] for p in target_points],
+                [p[0] for p in gaze_points],
+                [p[1] for p in gaze_points]
             ))
+            
+            # 保存数据
             np.savetxt(
                 os.path.join(self.results_dir, f'raw_data_path{path_idx+1}_{timestamp}.csv'),
                 raw_data,
@@ -400,7 +459,7 @@ class TrackingStabilityTask:
 
 if __name__ == "__main__":
     # 在这里修改受试者姓名和模型类型
-    subject_name = "test_subject"  # 修改为实际的受试者姓名
+    subject_name = "gff"  # 修改为实际的受试者姓名
     
     # 可用的模型类型：
     # "basic" - 基础版本
