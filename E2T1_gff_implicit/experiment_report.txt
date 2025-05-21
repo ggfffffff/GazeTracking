@@ -1,0 +1,57 @@
+Experiment Report for gff
+==================================================
+
+Overall Statistics:
+Total Rounds: 12
+Average MAE: 197.65 pixels
+Average Gaze Hit Rate: 12.58%
+
+Round-by-Round Analysis:
+
+Round 1:
+MAE: 181.25 pixels
+Gaze Hit Rate: 0.00%
+
+Round 2:
+MAE: 332.66 pixels
+Gaze Hit Rate: 0.00%
+
+Round 3:
+MAE: 381.90 pixels
+Gaze Hit Rate: 0.00%
+
+Round 4:
+MAE: 155.72 pixels
+Gaze Hit Rate: 0.00%
+
+Round 5:
+MAE: 67.23 pixels
+Gaze Hit Rate: 20.00%
+
+Round 6:
+MAE: 213.11 pixels
+Gaze Hit Rate: 0.00%
+
+Round 7:
+MAE: 178.44 pixels
+Gaze Hit Rate: 0.00%
+
+Round 8:
+MAE: 174.48 pixels
+Gaze Hit Rate: 0.00%
+
+Round 9:
+MAE: 278.21 pixels
+Gaze Hit Rate: 0.00%
+
+Round 10:
+MAE: 137.30 pixels
+Gaze Hit Rate: 14.29%
+
+Round 11:
+MAE: 164.34 pixels
+Gaze Hit Rate: 66.67%
+
+Round 12:
+MAE: 107.19 pixels
+Gaze Hit Rate: 50.00%

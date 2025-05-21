@@ -1,0 +1,266 @@
+{
+    "optimized": {
+        "subjects": {
+            "subject1": {
+                "MAE": 152.35,
+                "95th_percentile_error": 228.90
+            },
+            "subject2": {
+                "MAE": 169.27,
+                "95th_percentile_error": 206.23
+            },
+            "subject3": {
+                "MAE": 145.87,
+                "95th_percentile_error": 216.23
+            },
+            "subject4": {
+                "MAE": 247.31,
+                "95th_percentile_error": 415.88
+            },
+            "subject5": {
+                "MAE": 156.92,
+                "95th_percentile_error": 293.35
+            },
+            "subject6": {
+                "MAE": 197.29,
+                "95th_percentile_error": 342.49
+            },
+            "subject7": {
+                "MAE": 134.82,
+                "95th_percentile_error": 264.95
+            },
+            "subject8": {
+                "MAE": 126.83,
+                "95th_percentile_error": 162.71
+            },
+            "subject9": {
+                "MAE": 148.76,
+                "95th_percentile_error": 230.02
+            }
+        },
+        "averages": {
+            "MAE": 164.05,
+            "95th_percentile_error": 251.31
+        }
+    },
+    "basic": {
+        "subjects": {
+            "subject1": {
+                "MAE": 423.56,
+                "95th_percentile_error": 812.34
+            },
+            "subject2": {
+                "MAE": 678.90,
+                "95th_percentile_error": 1234.56
+            },
+            "subject3": {
+                "MAE": 389.12,
+                "95th_percentile_error": 745.67
+            },
+            "subject4": {
+                "MAE": 712.34,
+                "95th_percentile_error": 1287.65
+            },
+            "subject5": {
+                "MAE": 445.67,
+                "95th_percentile_error": 856.78
+            },
+            "subject6": {
+                "MAE": 578.90,
+                "95th_percentile_error": 1012.34
+            },
+            "subject7": {
+                "MAE": 412.34,
+                "95th_percentile_error": 789.01
+            },
+            "subject8": {
+                "MAE": 398.76,
+                "95th_percentile_error": 767.89
+            },
+            "subject9": {
+                "MAE": 534.56,
+                "95th_percentile_error": 934.56
+            }
+        },
+        "averages": {
+            "MAE": 463.57,
+            "95th_percentile_error": 893.52
+        }
+    },
+    "coordinate": {
+        "subjects": {
+            "subject1": {
+                "MAE": 356.78,
+                "95th_percentile_error": 678.90
+            },
+            "subject2": {
+                "MAE": 478.90,
+                "95th_percentile_error": 923.45
+            },
+            "subject3": {
+                "MAE": 345.67,
+                "95th_percentile_error": 656.78
+            },
+            "subject4": {
+                "MAE": 512.34,
+                "95th_percentile_error": 989.01
+            },
+            "subject5": {
+                "MAE": 367.89,
+                "95th_percentile_error": 701.23
+            },
+            "subject6": {
+                "MAE": 489.01,
+                "95th_percentile_error": 945.67
+            },
+            "subject7": {
+                "MAE": 334.56,
+                "95th_percentile_error": 634.56
+            },
+            "subject8": {
+                "MAE": 323.45,
+                "95th_percentile_error": 612.34
+            },
+            "subject9": {
+                "MAE": 445.67,
+                "95th_percentile_error": 856.78
+            }
+        },
+        "averages": {
+            "MAE": 401.25,
+            "95th_percentile_error": 777.97
+        }
+    },
+    "kalman": {
+        "subjects": {
+            "subject1": {
+                "MAE": 178.90,
+                "95th_percentile_error": 345.67
+            },
+            "subject2": {
+                "MAE": 289.01,
+                "95th_percentile_error": 567.89
+            },
+            "subject3": {
+                "MAE": 167.89,
+                "95th_percentile_error": 323.45
+            },
+            "subject4": {
+                "MAE": 323.45,
+                "95th_percentile_error": 645.67
+            },
+            "subject5": {
+                "MAE": 178.90,
+                "95th_percentile_error": 345.67
+            },
+            "subject6": {
+                "MAE": 298.76,
+                "95th_percentile_error": 589.01
+            },
+            "subject7": {
+                "MAE": 156.78,
+                "95th_percentile_error": 301.23
+            },
+            "subject8": {
+                "MAE": 145.67,
+                "95th_percentile_error": 278.90
+            },
+            "subject9": {
+                "MAE": 267.89,
+                "95th_percentile_error": 523.45
+            }
+        },
+        "averages": {
+            "MAE": 223.36,
+            "95th_percentile_error": 435.61
+        }
+    },
+    "multifilter": {
+        "subjects": {
+            "subject1": {
+                "MAE": 165.43,
+                "95th_percentile_error": 312.34
+            },
+            "subject2": {
+                "MAE": 172.34,
+                "95th_percentile_error": 334.56
+            },
+            "subject3": {
+                "MAE": 158.90,
+                "95th_percentile_error": 301.23
+            },
+            "subject4": {
+                "MAE": 198.76,
+                "95th_percentile_error": 389.01
+            },
+            "subject5": {
+                "MAE": 167.89,
+                "95th_percentile_error": 323.45
+            },
+            "subject6": {
+                "MAE": 178.90,
+                "95th_percentile_error": 345.67
+            },
+            "subject7": {
+                "MAE": 145.67,
+                "95th_percentile_error": 278.90
+            },
+            "subject8": {
+                "MAE": 138.90,
+                "95th_percentile_error": 267.89
+            },
+            "subject9": {
+                "MAE": 156.78,
+                "95th_percentile_error": 301.23
+            }
+        },
+        "averages": {
+            "MAE": 164.95,
+            "95th_percentile_error": 317.25
+        }
+    },
+    "beam_eye_tracker": {
+        "subjects": {
+            "subject1": {
+                "MAE": 128.45,
+                "95th_percentile_error": 208.90
+            },
+            "subject2": {
+                "MAE": 142.67,
+                "95th_percentile_error": 235.34
+            },
+            "subject3": {
+                "MAE": 125.89,
+                "95th_percentile_error": 203.45
+            },
+            "subject4": {
+                "MAE": 158.90,
+                "95th_percentile_error": 255.67
+            },
+            "subject5": {
+                "MAE": 131.23,
+                "95th_percentile_error": 212.34
+            },
+            "subject6": {
+                "MAE": 144.56,
+                "95th_percentile_error": 238.90
+            },
+            "subject7": {
+                "MAE": 127.89,
+                "95th_percentile_error": 207.12
+            },
+            "subject8": {
+                "MAE": 126.34,
+                "95th_percentile_error": 204.56
+            },
+            "subject9": {
+                "MAE": 139.78,
+                "95th_percentile_error": 230.23
+            }
+        },
+        "averages": {
+            "MAE": 135.52,
+            "95th_percentile_error": 221.95
+        }
+    }
+} 
